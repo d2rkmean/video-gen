@@ -1,0 +1,25 @@
+[project]
+name = "video-gen"
+version = "0.1.0"
+description = "Генератор видео для TikTok/YouTube"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "av<13",
+    "edge-tts>=7.2.8",
+    "faster-whisper>=1.2.1",
+    "flet>=1.0.3",
+    "loguru>=0.7.3",
+    "nvidia-cublas-cu12>=12.9.2.10",
+    "nvidia-cudnn-cu12>=9.27.0.42",
+    "pygame>=2.6.1",
+    "selenium>=4.50.0",
+    "yt-dlp>=2026.8.19",
+]
+
+[project.scripts]
+video-gen = "video_gen:main"
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"
