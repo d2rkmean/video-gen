@@ -15,11 +15,73 @@ dependencies = [
     "pygame>=2.6.1",
     "selenium>=4.50.0",
     "yt-dlp>=2026.8.19",
+    "pydantic",
+    "google-genai",
+    "rich",
 ]
 
 [project.scripts]
-video-gen = "video_gen:main"
+video-gen = "video_gen.__main__:main"
 
 [build-system]
-requires = ["uv_build>=0.12.19,<0.13.0"]
-build-backend = "uv_build"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/video_gen"]
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.0",
+    "ruff>=0.16.10",
+    "pytest>=8.0.0",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "ffmpeg: mark a test as requiring ffmpeg and NVENC."
+]
+
+[tool.mypy]
+[[tool.mypy.overrides]]
+module = "faster_whisper.*"
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes: неиспользуемые импорты, неопределённые имена
+    "I",        # сортировка импортов
+    "B",        # flake8-bugbear: типичные баги
+    "UP",       # модернизация синтаксиса
+    "C4",       # лишние comprehension
+    "SIM",      # упрощение кода
+    "RUF",      # правила самого ruff
+    "PL",       # pylint
+    "PTH",      # pathlib вместо os.path
+    "S",        # безопасность (subprocess и т.п.)
+    "BLE",      # голый except Exception
+    "TRY",      # правильная работа с исключениями
+    "ARG",      # неиспользуемые аргументы
+]
+ignore = [
+    "E501",     # длину строк контролирует formatter
+    "S603", "S607",   # subprocess с ffmpeg/ffprobe: у нас это осознанно
+    "TRY003",   # длинные сообщения в исключениях
+    "PLR0913",  # много аргументов у функций
+    "RUF001", "RUF002", "RUF003",
+    "S311",
+    "PLR0917", "PLR2004",
+    "TRY301",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["video_gen"]
+
+[tool.ruff.lint.per-file-ignores]
+"__main__.py" = ["BLE001"]   # там осознанный except Exception
+"tests/*" = ["S101", "PLR2004", "ARG"]

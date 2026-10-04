@@ -1,21 +1,71 @@
-# Входные видео для нарезки (путь к файлу или папке)
-videos.top_videos = [
-  {"type": "video", "source": "input/"}
-]
+# Скопируй в config.toml и поправь под себя.
 
-# Нижний фон (видео-файл/папка или ID игры pygame)
-videos.buttom_videos = [
-  {"type": "pygame", "source": "bouncing_balls"}
-]
+[[videos.top_videos]]
+type = "video"             # для верхнего видео доступен только "video"
+source = "input/"          # папка с видео или путь к одному файлу
 
-# Выходная директория
-params.output_dir = "output/"
+[[videos.buttom_videos]]
+type = "video"             # папка или файл с фоновыми видео (майнкрафт, песок и т.п.)
+source = "bottom/"
 
-# Gemini (нарезка вирусных фрагментов)
-params.gemini_key = "AIzaSy..."
-params.gemini_model = "gemini-3.5-flash-lite"
+# Генерация через pygame пока не реализована (см. ниже)
+# [[videos.buttom_videos]]
+# type = "pygame"
+# source = "bouncing_balls"
 
-# Логика клипов
-params.parts_count = 5              # Сколько частей вырезать из одного видео
-params.part_duration = 60           # Макс. длина клипа (сек)
-params.whisper_model = "large-v3"      # Модель транскрибации (small — идеальный баланс скорости/памяти)
+[params]
+output_dir = "output/"
+
+# Ключ лучше не хранить в файле: export GEMINI_API_KEY="..."
+# gemini_key = "..."
+gemini_model = "gemini-3.5-flash-lite"
+parts_count = 5            # максимум клипов с одного видео (1-20)
+min_part_duration = 20     # минимальная длина клипа, сек
+part_duration = 60         # максимальная длина клипа, сек (10-180)
+
+whisper_model = "large-v3"
+whisper_device = "cuda"                # cuda | cpu | auto
+whisper_compute_type = "float16"       # при нехватке VRAM: int8_float16
+beam_size = 5
+language = "ru"
+
+[assets]
+# Раскомментируй, что нужно. Если ключа нет, баннер/музыка отключены.
+# banner = "assets/banner.mp4"
+# music_dir = "assets/music/"
+fonts_dir = "fonts/"       # сюда положи .ttf (кириллица обязательна)
+
+[render]
+width = 1080
+height = 1920              # верх и низ делят кадр пополам
+fps = 30
+mirror = true              # зеркало верхнего видео
+top_zoom = 1.12            # кроп-приближение верхнего видео (1.0 = выкл)
+contrast = 1.08
+saturation = 1.15
+brightness = 0.02
+gamma = 1.03
+noise_top = 6
+noise_bottom = 5
+bottom_mode = "random"     # random | sequential
+blur_sigma = 40.0          # размытие под баннером
+banner_width = 900
+duck_volume = 0.10         # громкость основного звука во время баннера
+music_volume = 0.07        # громкость фоновой музыки (0.05-0.10)
+cq = 23                    # качество NVENC: меньше = лучше и тяжелее
+
+[subtitles]
+font = "Montserrat"        # имя семейства из `fc-scan fonts/*.ttf | grep family`
+font_size = 84
+spoken_color = "&H0000FFFF"    # &HAABBGGRR, жёлтый
+unspoken_color = "&H00FFFFFF"  # белый
+outline_color = "&H00000000"
+outline = 6
+alignment = 5              # numpad: 2 снизу, 5 по центру, 8 сверху
+margin_v = 0
+margin_h = 60
+uppercase = true
+max_words = 3              # слов в строке на экране
+max_chars = 24
+max_gap = 0.6              # пауза, после которой начинается новая строка
+hold = 0.2
