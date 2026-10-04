@@ -1,0 +1,21 @@
+# Входные видео для нарезки (путь к файлу или папке)
+videos.top_videos = [
+  {"type": "video", "source": "input/"}
+]
+
+# Нижний фон (видео-файл/папка или ID игры pygame)
+videos.buttom_videos = [
+  {"type": "pygame", "source": "bouncing_balls"}
+]
+
+# Выходная директория
+params.output_dir = "output/"
+
+# Gemini (нарезка вирусных фрагментов)
+params.gemini_key = "AIzaSy..."
+params.gemini_model = "gemini-3.5-flash-lite"
+
+# Логика клипов
+params.parts_count = 5              # Сколько частей вырезать из одного видео
+params.part_duration = 60           # Макс. длина клипа (сек)
+params.whisper_model = "large-v3"      # Модель транскрибации (small — идеальный баланс скорости/памяти)

@@ -12,5 +12,6 @@ wheels/
 # video-gen files
 logs/
 output/
+input/
 config.toml
 !config.toml.example
