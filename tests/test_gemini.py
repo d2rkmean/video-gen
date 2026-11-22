@@ -1,41 +1,39 @@
 from video_gen.config import AppConfig
-from video_gen.models import Segment
-from video_gen.tasks.gemini_task import GeminiTask, _HighlightSchema
+from video_gen.tasks.best_parts_task import BestPartsTask as GeminiTask, _HighlightSchema, _Unit
 
 
-def test_gemini_snap():
-    segments = [
-        Segment(start=1.0, end=2.0, text="A"),
-        Segment(start=3.0, end=4.0, text="B"),
-        Segment(start=5.0, end=6.0, text="C"),
+def test_gemini_bounds():
+    units = [
+        _Unit(start=1.0, end=2.0, text="A"),
+        _Unit(start=3.0, end=4.0, text="B"),
+        _Unit(start=5.0, end=6.0, text="C"),
     ]
-    # start in first gap, end in second gap
-    s, e = GeminiTask._snap(2.5, 4.5, segments, 10.0, pad_before=0.1, pad_after=0.1)
-    # snap to nearest phrase inside range, which is "B" (3.0-4.0).
-    # pad before max 0.1, gap_before is 3.0 - 2.0 = 1.0 (half is 0.5), so pad_before=0.1 -> 3.0 - 0.1 = 2.9
-    # pad after max 0.1, gap_after is 5.0 - 4.0 = 1.0 (half is 0.5), so pad_after=0.1 -> 4.0 + 0.1 = 4.1
+    # For unit 1 ("B"): i=1, j=1.
+    # gap_before = 3.0 - 2.0 = 1.0 -> pad_before is min(0.1, 0.5) = 0.1 -> start = 2.9
+    # gap_after = 5.0 - 4.0 = 1.0 -> pad_after is min(0.1, 0.5) = 0.1 -> end = 4.1
+    s, e = GeminiTask._bounds(1, 1, units, 10.0, pad_before=0.1, pad_after=0.1)
     assert abs(s - 2.9) < 0.01
     assert abs(e - 4.1) < 0.01
 
 
 def test_gemini_validate():
-    # raw: list[_HighlightSchema], segments, video_end, max_clips, min_dur, max_dur
     raw = [
-        _HighlightSchema(start=1.0, end=3.0, reason="a", score=10),
-        _HighlightSchema(start=2.0, end=4.0, reason="b", score=9),  # overlap
-        _HighlightSchema(start=8.0, end=10.0, reason="c", score=8),  # ok
-        _HighlightSchema(start=12.0, end=10.0, reason="d", score=7),  # invalid end<=start
+        _HighlightSchema(
+            start_line="L0", end_line="L0", reason="first", score=10, hook="h1", viral_title="t1"
+        ),
+        _HighlightSchema(
+            start_line="L0", end_line="L1", reason="overlap", score=9
+        ),  # overlaps with L0
+        _HighlightSchema(
+            start_line="L2", end_line="L2", reason="ok", score=8, hook="h2", viral_title="t2"
+        ),
+        _HighlightSchema(start_line="L4", end_line="L3", reason="invalid end<start", score=7),
     ]
-    segments = [
-        Segment(start=1.5, end=2.5, text="A"),
-        Segment(start=3.5, end=4.5, text="B"),
-        Segment(start=8.5, end=9.5, text="C"),
+    units = [
+        _Unit(start=1.0, end=3.0, text="A"),
+        _Unit(start=3.5, end=5.5, text="B"),
+        _Unit(start=6.0, end=8.0, text="C"),
     ]
-    # wait, validation also snaps.
-    # r1: 1.0-3.0 -> snaps to A (1.5-2.5) -> pad 0.3/0.5 -> 1.2-3.0 (with max gap logic)
-    # let's just make a dummy instance or call classmethod
-    # validate is instance method? Wait, _validate is a normal method or static?
-    # Let me mock logger and call it.
 
     cfg = AppConfig.model_validate(
         {
@@ -45,7 +43,11 @@ def test_gemini_validate():
     )
     task = GeminiTask(cfg)
 
-    highlights = task._validate(raw, segments, 15.0, 5, min_dur=0.5, max_dur=10.0)
+    highlights = task._validate(
+        raw, units, 15.0, max_clips=5, min_dur=1.0, max_dur=10.0, expand_short=False
+    )
     assert len(highlights) == 2
     assert highlights[0].score == 10
+    assert highlights[0].viral_title == "t1"
     assert highlights[1].score == 8
+    assert highlights[1].viral_title == "t2"

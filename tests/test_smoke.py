@@ -203,7 +203,8 @@ def test_smoke_render(smoke_env, tmp_path):
         data = json.loads(proc.stdout)
 
         dur = float(data["format"]["duration"])
-        assert abs(dur - 5.0) < 0.2
+        expected_dur = 8.0 if cfg.assets.banner else 5.0
+        assert abs(dur - expected_dur) < 0.2
 
         vstream = next(s for s in data["streams"] if s["codec_type"] == "video")
 

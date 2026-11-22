@@ -1,8 +1,10 @@
+import json
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from video_gen.config import AppConfig
 from video_gen.tasks.ffmpeg_task import FFmpegTask, RenderSettings
+from video_gen.utils.audio_utils import detect_preferred_audio_stream
 
 
 def test_ffmpeg_plan_bottom():
@@ -42,6 +44,8 @@ def test_ffmpeg_build_filter_graph():
     assert "[top]" in f
     assert "[bot]" in f
     assert "vstack=inputs=2" in f
+    assert "unsharp=" in f
+    assert "eq=contrast=" in f
     assert has_audio
 
     info["i_banner"] = 3
@@ -51,8 +55,26 @@ def test_ffmpeg_build_filter_graph():
     f2, _ = FFmpegTask._build_filter_graph(s, 10.0, info, None, Path("fonts"))
     assert "overlay" in f2
     assert "gblur" in f2
+    assert "split[main][tmp]" not in f2  # Verify memory leak fix (no buffering split)
+    assert "enable='between(t,2.000,5.000)'" in f2
 
     info["i_music"] = 4
     f3, _ = FFmpegTask._build_filter_graph(s, 10.0, info, None, Path("fonts"))
     assert "[amus]" in f3
     assert "amix" in f3
+
+
+def test_detect_preferred_audio_stream():
+    mock_out = json.dumps(
+        {
+            "streams": [
+                {"index": 0, "tags": {"language": "eng", "title": "English"}},
+                {"index": 1, "tags": {"language": "rus", "title": "MTV Дубляж"}},
+            ]
+        }
+    )
+    with patch("subprocess.run", return_value=MagicMock(stdout=mock_out)):
+        # Clear lru_cache for fresh mock run
+        detect_preferred_audio_stream.cache_clear()
+        idx = detect_preferred_audio_stream(Path("south_park.mkv"))
+        assert idx == 1

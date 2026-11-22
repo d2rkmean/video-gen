@@ -1,27 +1,53 @@
 # Скопируй в config.toml и поправь под себя.
 
 [[videos.top_videos]]
-type = "video"             # для верхнего видео доступен только "video"
+type = "video"             # "video" (локальные файлы/папка) или "youtube" (URL или плейлист)
 source = "input/"          # папка с видео или путь к одному файлу
+# codename = "GGSEL"       # кодовое имя источника для каталога (разделяет источники в боте-раздатчике)
+# output_dir = "output/channel1/" # опционально: персональная папка выгрузки для этого источника
+# part_duration = 45       # опционально: целевая/максимальная длительность клипа (сек) для этого источника
+# min_part_duration = 20   # опционально: минимальная длительность клипа (сек) для этого источника
+# duration = 45            # либо кратко: duration = 45 или диапазон duration = [20, 50]
+# parts_count = 5          # опционально: максимум клипов с одного видео для этого источника
+
+# Пример источника из YouTube с кастомной длительностью:
+# [[videos.top_videos]]
+# type = "youtube"
+# source = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+# codename = "VANZAI"
+# output_dir = "output/youtube_rips/"
+# part_duration = 75       # длинные клипы для подкастов/челленджей
+# min_part_duration = 35
+# mode = "speech_split"    # режим нарезки: "highlights" (Gemini) или "speech_split" (по паузам в речи)
 
 [[videos.buttom_videos]]
-type = "video"             # папка или файл с фоновыми видео (майнкрафт, песок и т.п.)
+type = "video"             # "video" (папка/файл) или "pygame" (процедурный раннер/матрица)
 source = "bottom/"
 
-# Генерация через pygame пока не реализована (см. ниже)
+# Пример процедурного фона через PyGame (headless):
 # [[videos.buttom_videos]]
 # type = "pygame"
-# source = "bouncing_balls"
+# source = "runner"        # пресеты: "runner", "particles", "matrix"
 
 [params]
 output_dir = "output/"
 
 # Ключ лучше не хранить в файле: export GEMINI_API_KEY="..."
 # gemini_key = "..."
-gemini_model = "gemini-3.5-flash-lite"
+gemini_model = "gemini-2.5-flash-lite"
 parts_count = 5            # максимум клипов с одного видео (1-20)
 min_part_duration = 20     # минимальная длина клипа, сек
 part_duration = 60         # максимальная длина клипа, сек (10-180)
+silence_gap_threshold = 7.0 # отсекать заставки, титры и паузы > 7 сек
+
+# Режим нарезки: "highlights" (умный отбор через Gemini AI) или "speech_split" (последовательная нарезка по паузам речи)
+mode = "highlights"
+sponsorblock_enabled = true
+
+# Управление кэшем воркеров:
+use_whisper_cache = true   # false — принудительно перераспознавать аудио заново
+use_gemini_cache = true    # false — принудительно перезапрашивать Gemini AI заново
+use_render_cache = true    # false — принудительно рендерить заново, даже если клип уже готов
 
 whisper_model = "large-v3"
 whisper_device = "cuda"                # cuda | cpu | auto
@@ -32,6 +58,7 @@ language = "ru"
 [assets]
 # Раскомментируй, что нужно. Если ключа нет, баннер/музыка отключены.
 # banner = "assets/banner.mp4"
+# banners_dir = "assets/banners/" # папка со случайными баннерами (.png, .mp4, .mov, ...)
 # music_dir = "assets/music/"
 fonts_dir = "fonts/"       # сюда положи .ttf (кириллица обязательна)
 
@@ -40,32 +67,88 @@ width = 1080
 height = 1920              # верх и низ делят кадр пополам
 fps = 30
 mirror = true              # зеркало верхнего видео
+face_tracking = true       # автоцентрирование кропа по лицу говорящего спикера
 top_zoom = 1.12            # кроп-приближение верхнего видео (1.0 = выкл)
-contrast = 1.08
-saturation = 1.15
-brightness = 0.02
-gamma = 1.03
+enable_antidetect = true   # антидетект уникализация каждого ролика (хэши Content ID)
+speed_jitter = true        # микро-джиттер скорости (0.985x - 1.015x) для сбивки аудио-хэшей
+contrast = 1.08            # сочный контраст для верха
+saturation = 1.16          # сочные цвета лиц и объектов
+brightness = 0.01
+gamma = 1.02
+bottom_contrast = 1.10     # сочный контраст для фонового видео
+bottom_saturation = 1.25   # насыщенный, яркий фон
+bottom_brightness = 0.01
+bottom_gamma = 1.02
+sharpen = true             # фильтр резкости (unsharp mask) для кристальной сочности
+unsharp_luma = 0.8
+unsharp_chroma = 0.4
 noise_top = 6
 noise_bottom = 5
 bottom_mode = "random"     # random | sequential
 blur_sigma = 40.0          # размытие под баннером
-banner_width = 900
+banner_width = 1080
+# banner_mode = "center"         # "center" (стоп-кадр по центру с размытием) или "overlay" (постоянный водяной знак на экране)
+# banner_anchor = "center"       # привязка: "top-left", "top-right", "bottom-left", "bottom-right", "center"
+# banner_x = 0                   # смещение по X от точки привязки (px)
+# banner_y = 0                   # смещение по Y от точки привязки (px)
+# banner_opacity = 1.0           # прозрачность баннера (0.0 - 1.0)
+# banner_scale = 1.0             # масштаб баннера (0.1 - 5.0)
 duck_volume = 0.10         # громкость основного звука во время баннера
 music_volume = 0.07        # громкость фоновой музыки (0.05-0.10)
 cq = 23                    # качество NVENC: меньше = лучше и тяжелее
 
+# Кастомная подложка, размытие и отступы
+enable_canvas_blur = false  # размытый фон за роликом (boxblur)
+boxblur_radius = 20.0
+boxblur_power = 2
+canvas_bg_color = "black"
+top_offset_y = 0
+bottom_offset_y = 0
+top_padding = 0
+bottom_padding = 0
+
 [subtitles]
-font = "Montserrat"        # имя семейства из `fc-scan fonts/*.ttf | grep family`
-font_size = 84
+font = "Unbounded"         # трендовый шрифт без АП (Unbounded, Montserrat, Rubik)
+font_size = 78
 spoken_color = "&H0000FFFF"    # &HAABBGGRR, жёлтый
 unspoken_color = "&H00FFFFFF"  # белый
 outline_color = "&H00000000"
 outline = 6
+shadow = 3                 # объёмная тень
 alignment = 5              # numpad: 2 снизу, 5 по центру, 8 сверху
 margin_v = 0
 margin_h = 60
 uppercase = true
+animation = "pop"          # pop | bounce | none
 max_words = 3              # слов в строке на экране
 max_chars = 24
 max_gap = 0.6              # пауза, после которой начинается новая строка
 hold = 0.2
+
+[telegram]
+# Автоматическая выгрузка готовых видео в Telegram-канал через Telethon
+enabled = false
+force_document = true      # отправлять как документ без сжатия (для совместимости с video-worker-bot)
+format = "json"            # "json" (для бота-раздатчика) или "text" (для шаблона)
+# Подпись к ролику (если format = "text"): переменные $caption_name, $source_idx, $part_idx
+caption = "$caption_name, часть $source_idx, нарезка $part_idx"
+# api_id = 12345678          # Получить на my.telegram.org (или передать через TG_API_ID)
+# api_hash = "abcdef012345"  # Получить на my.telegram.org (или передать через TG_API_HASH)
+# bot_token = "..."          # Опционально: если выгрузка идёт через бота (или через TG_BOT_TOKEN)
+# channel = "@your_channel"  # Юзернейм или ID целевого канала (или передать через TG_CHANNEL)
+# thread_id = 12345          # Опционально: ID темы/топика в супергруппе (или передать через TG_THREAD_ID)
+
+[database]
+# Каталогизация фильмов, сериалов и нарезок (FilmWorker -> PostgreSQL)
+# Иерархические коды: (XXXXX-{серия}-{нарезка})
+# - Для фильма: последние 2 части опциональны (сам фильм: XXXXX, нарезка: XXXXX-{нарезка})
+# - Для серии: последняя часть опциональна (сама серия: XXXXX-{серия}, нарезка: XXXXX-{серия}-{нарезка})
+enabled = false
+host = "127.0.0.1"
+port = 5432
+user = "videogen"
+password = ""
+database = "videogen_db"
+min_connections = 1
+max_connections = 10
+timeout = 15.0

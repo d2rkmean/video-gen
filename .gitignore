@@ -7,11 +7,31 @@ wheels/
 *.egg-info
 
 # Virtual environments
-.venv
+.venv/
 
-# video-gen files
-logs/
-output/
-input/
+# Secrets & local configs
+.env
+.env.*
+!.env.example
+config.json
+!config.json.example
 config.toml
 !config.toml.example
+*.session
+funpay_description.txt
+
+# Caches & tool state
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.cache/
+cache/
+
+# video-gen runtime files
+logs/
+output/
+out/
+input/
+*.part
+.~lock.*
+temp_*

@@ -22,25 +22,49 @@ class SubtitleStyle:
         unspoken_color: Цвет ещё не произнесённых слов.
         outline_color: Цвет обводки.
         outline: Толщина обводки.
-        margin_v: Отступ от нижнего края. Большое значение уводит текст
-            из-под интерфейса платформы.
-        margin_h: Боковые отступы.
+        margin_v: Не влияет на позицию: текст ставится по линии стыка через
+            ``\\pos`` (см. ``seam_y``). Поле оставлено для совместимости.
+        margin_h: Боковые отступы (ограничивают ширину строки при переносе).
         uppercase: Выводить текст заглавными буквами.
         res_x: Ширина кадра (PlayResX).
         res_y: Высота кадра (PlayResY).
+        top_parts: Доля верхнего видео. Держи в синхроне с
+            ``RenderSettings.top_parts``.
+        bottom_parts: Доля нижнего видео. Держи в синхроне с
+            ``RenderSettings.bottom_parts``.
+        seam_offset: Сдвиг текста от линии стыка в пикселях (вниз плюс,
+            вверх минус). Нужен для подгонки под метрики шрифта.
     """
 
-    font: str = "Montserrat"
-    font_size: int = 84
+    font: str = "Unbounded"
+    font_size: int = 78
+    bold: bool = True
+    italic: bool = False
     spoken_color: str = "&H0000FFFF"
     unspoken_color: str = "&H00FFFFFF"
     outline_color: str = "&H00000000"
     outline: int = 6
+    shadow: int = 3
     margin_v: int = 420
     margin_h: int = 60
     uppercase: bool = True
     res_x: int = 1080
     res_y: int = 1920
+    top_parts: int = 1
+    bottom_parts: int = 2
+    seam_offset: int = 0
+    animation: str = "pop"
+    pop_animation: bool = True
+
+    @property
+    def seam_y(self) -> int:
+        """Координата Y линии между верхним и нижним видео.
+
+        Считается так же, как в рендере: высота верха делится по
+        ``top_parts : bottom_parts`` и округляется до чётного.
+        """
+        total = self.top_parts + self.bottom_parts
+        return (self.res_y * self.top_parts // total) // 2 * 2
 
 
 class SubtitleTask(BaseTask):
@@ -48,7 +72,9 @@ class SubtitleTask(BaseTask):
 
     Берёт слова, попавшие в диапазон ``Highlight``, сдвигает тайминги так,
     чтобы клип начинался с нуля, группирует слова в короткие строки и
-    расставляет karaoke-теги ``\\kf`` для плавной подсветки.
+    расставляет karaoke-теги ``\\kf`` для плавной подсветки. Строки
+    центрируются по горизонтали и вертикально ставятся ровно на линию
+    между верхним и нижним видео.
 
     Состояние конкретного клипа в ``self`` не хранится.
 
@@ -190,6 +216,17 @@ class SubtitleTask(BaseTask):
             parts.append(f"{{\\kf{cs}}}{self._escape(w.text)}")
         text = " ".join(parts)
 
+        s = self.style
+        anim_tag = ""
+        if s.pop_animation and s.animation != "none":
+            if s.animation == "bounce":
+                anim_tag = r"\fscx88\fscy88\t(0,60,\fscx106\fscy106)\t(60,120,\fscx100\fscy100)"
+            else:  # "pop" or default
+                anim_tag = r"\fscx92\fscy92\t(0,75,\fscx100\fscy100)"
+
+        pos = f"{{\\an5\\pos({s.res_x // 2},{s.seam_y + s.seam_offset}){anim_tag}}}"
+        text = pos + text
+
         return f"Dialogue: 0,{self._ts(start)},{self._ts(end)},Default,,0,0,0,,{text}"
 
     def _header(self) -> str:
@@ -208,8 +245,8 @@ class SubtitleTask(BaseTask):
             "ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, "
             "Alignment, MarginL, MarginR, MarginV, Encoding\n"
             f"Style: Default,{s.font},{s.font_size},{s.spoken_color},{s.unspoken_color},"
-            f"{s.outline_color},&H80000000,-1,0,0,0,100,100,0,0,1,{s.outline},0,"
-            f"2,{s.margin_h},{s.margin_h},{s.margin_v},1\n\n"
+            f"{s.outline_color},&H80000000,{-1 if s.bold else 0},{-1 if s.italic else 0},0,0,100,100,0,0,1,{s.outline},{s.shadow},"
+            f"5,{s.margin_h},{s.margin_h},{s.margin_v},1\n\n"
             "[Events]\n"
             "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
         )

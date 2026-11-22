@@ -1,0 +1,50 @@
+{
+  "videos": {
+    "top_videos": [
+      {
+        "type": "video",
+        "source": "input/",
+        "caption": "Test"
+      }
+    ],
+    "bottom_videos": [
+      {
+        "type": "video",
+        "source": "bottom/"
+      }
+    ]
+  },
+  "params": {
+    "output_dir": "output/",
+    "transcribe_backend": "local",
+    "transcribe_model": "whisper-large-v3",
+    "analysis_backend": "openai",
+    "analysis_model": "gpt-4o-mini",
+    "analysis_api_base": "https://api.openai.com/v1",
+    "parts_count": 5,
+    "min_part_duration": 20,
+    "part_duration": 60,
+    "max_retries": 3,
+    "retry_delay": 2.0,
+    "concurrent_renders": 1
+  },
+  "render": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "video_codec": "h264_nvenc",
+    "cq": 28,
+    "preset": "p4"
+  },
+  "subtitles": {
+    "enabled": true,
+    "font": "Unbounded",
+    "font_size": 78,
+    "bold": false,
+    "italic": false,
+    "fill_color": "&H00FFFFFF",
+    "spoken_color": "&H0000FFFF",
+    "alignment": 2,
+    "position": "bottom"
+  }
+}

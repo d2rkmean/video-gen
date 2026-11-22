@@ -1,6 +1,6 @@
 from video_gen.config import AppConfig
 from video_gen.models import Highlight, Segment, Word
-from video_gen.tasks.subtitle_task import SubtitleTask
+from video_gen.tasks.subtitle_task import SubtitleStyle, SubtitleTask
 
 
 def test_subtitle_ts():
@@ -68,3 +68,27 @@ def test_subtitle_dialogue():
     d = task._dialogue(chunk, None, 5.0)
     assert "Dialogue:" in d
     assert "{\\kf100}HELLO {\\kf100}WORLD" in d
+    assert r"\fscx92\fscy92\t(0,75,\fscx100\fscy100)" in d
+
+
+def test_subtitle_animations():
+    cfg = AppConfig.model_validate(
+        {
+            "videos": {"top_videos": [{"type": "video", "source": "input"}]},
+            "params": {"gemini_key": "k"},
+        }
+    )
+    # bounce
+    task_bounce = SubtitleTask(cfg, style=SubtitleStyle(animation="bounce"))
+    d_bounce = task_bounce._dialogue([Word(0.0, 1.0, "BOUNCE")], None, 2.0)
+    assert r"\fscx88\fscy88" in d_bounce
+
+    # none
+    task_none = SubtitleTask(cfg, style=SubtitleStyle(animation="none"))
+    d_none = task_none._dialogue([Word(0.0, 1.0, "STATIC")], None, 2.0)
+    assert r"\fscx" not in d_none
+
+    # header checks
+    header = task_bounce._header()
+    assert "Unbounded" in header
+    assert "ScaledBorderAndShadow: yes" in header

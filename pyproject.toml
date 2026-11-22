@@ -8,7 +8,6 @@ dependencies = [
     "av<13",
     "edge-tts>=7.2.8",
     "faster-whisper>=1.2.1",
-    "flet>=1.0.3",
     "loguru>=0.7.3",
     "nvidia-cublas-cu12>=12.9.2.10",
     "nvidia-cudnn-cu12>=9.27.0.42",
@@ -18,6 +17,9 @@ dependencies = [
     "pydantic",
     "google-genai",
     "rich",
+    "opencv-python-headless>=5.0.0.93",
+    "asyncpg>=0.32.0",
+    "openai>=3.49.0",
 ]
 
 [project.scripts]
@@ -44,7 +46,12 @@ markers = [
 
 [tool.mypy]
 [[tool.mypy.overrides]]
-module = "faster_whisper.*"
+module = ["faster_whisper.*", "cv2", "cv2.*", "yt_dlp.*", "pygame.*"]
+ignore_missing_imports = true
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = ["asyncpg", "asyncpg.*"]
 ignore_missing_imports = true
 
 [tool.ruff]
@@ -83,5 +90,11 @@ ignore = [
 known-first-party = ["video_gen"]
 
 [tool.ruff.lint.per-file-ignores]
-"__main__.py" = ["BLE001"]   # там осознанный except Exception
-"tests/*" = ["S101", "PLR2004", "ARG"]
+"src/video_gen/__main__.py" = ["BLE001", "PLR0915", "PLR0912", "E402", "B023", "PLC0415"]
+"src/video_gen/models.py" = ["PLC0415"]
+"src/video_gen/tasks/transcribe_task.py" = ["PLC0415"]
+"src/video_gen/tasks/youtube_task.py" = ["BLE001", "TRY300", "S110"]
+"src/video_gen/utils/cache.py" = ["BLE001", "TRY300"]
+"src/video_gen/utils/ad_filter.py" = ["BLE001", "S310"]
+"tests/*" = ["S101", "PLR2004", "ARG", "S108", "S105", "E712", "F401", "I001", "PLC0415"]
+"src/video_gen/callbacks.py" = ["ARG002"]
